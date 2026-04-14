@@ -79,6 +79,55 @@ function nextSymbol(rawKey: string): ComposerState {
   return STATE_ALIAS_TO_SYMBOL[rawKey.toLowerCase()] ?? ''
 }
 
+function fillFromIndex(
+  cells: DraftCell[],
+  startIndex: number,
+  rawValue: string,
+): DraftCell[] {
+  const sanitized = rawValue.toLowerCase().replace(/[\s,;:/\\|_-]+/g, '')
+  const nextCells = cells.map((cell) => ({ ...cell }))
+  let cellIndex = startIndex
+
+  for (const char of sanitized) {
+    if (cellIndex >= nextCells.length) {
+      break
+    }
+
+    if (/\d/.test(char)) {
+      if (
+        nextCells[cellIndex].digit &&
+        nextCells[cellIndex].state === '' &&
+        cellIndex < nextCells.length - 1
+      ) {
+        cellIndex += 1
+      }
+
+      nextCells[cellIndex] = {
+        digit: char,
+        state: '',
+      }
+      continue
+    }
+
+    const state = nextSymbol(char)
+
+    if (!state || !nextCells[cellIndex].digit) {
+      continue
+    }
+
+    nextCells[cellIndex] = {
+      digit: nextCells[cellIndex].digit,
+      state,
+    }
+
+    if (cellIndex < nextCells.length - 1) {
+      cellIndex += 1
+    }
+  }
+
+  return nextCells
+}
+
 export function AttemptComposer({
   codeLength,
   disabled,
@@ -105,7 +154,7 @@ export function AttemptComposer({
       <div className="attempt-composer__header">
         <span className="field__label">Entrada rápida</span>
         <span className="attempt-composer__hint">
-          Escribe el dígito y pulsa <code>R</code>, <code>A/B</code> o <code>V/G</code>.
+          Flujo rápido: <code>2r 3b 4v</code>. El número se queda en la casilla y el color te mueve a la siguiente.
         </span>
       </div>
 
@@ -131,15 +180,19 @@ export function AttemptComposer({
               inputMode="numeric"
               maxLength={1}
               onChange={(event) => {
-                const nextDigit = event.target.value.replace(/\D/g, '').slice(-1)
+                const nextRawValue = event.target.value
+                const digitCount = nextRawValue.replace(/\D/g, '').length
+
+                if (digitCount > 1 || /[ravgb]/i.test(nextRawValue)) {
+                  onChange(serializeDraft(fillFromIndex(cells, index, nextRawValue)))
+                  return
+                }
+
+                const nextDigit = nextRawValue.replace(/\D/g, '').slice(-1)
                 updateCell(index, {
                   digit: nextDigit,
                   state: nextDigit ? cell.state : '',
                 })
-
-                if (nextDigit && index < codeLength - 1) {
-                  focusCell(index + 1)
-                }
               }}
               onKeyDown={(event) => {
                 if (event.key === 'ArrowLeft' && index > 0) {
@@ -154,9 +207,38 @@ export function AttemptComposer({
                   return
                 }
 
-                if (event.key === 'Backspace' && !cell.digit && index > 0) {
+                if (/\d/.test(event.key)) {
                   event.preventDefault()
-                  focusCell(index - 1)
+                  updateCell(index, {
+                    digit: event.key,
+                    state: cell.state,
+                  })
+                  return
+                }
+
+                if (event.key === 'Backspace') {
+                  event.preventDefault()
+
+                  if (cell.state) {
+                    updateCell(index, {
+                      digit: cell.digit,
+                      state: '',
+                    })
+                    return
+                  }
+
+                  if (cell.digit) {
+                    updateCell(index, {
+                      digit: '',
+                      state: '',
+                    })
+                    return
+                  }
+
+                  if (index > 0) {
+                    focusCell(index - 1)
+                  }
+
                   return
                 }
 
