@@ -13,6 +13,7 @@ describe('parseCompactAttempt', () => {
     const parsed = parseCompactAttempt('1r 2g 3r 4b', 4)
 
     expect(parsed.code).toBe('1234')
+    expect(parsed.feedbackKey).toBe('rvra')
     expect(parsed.normalized).toBe('1r2v3r4a')
     expect(parsed.states.map(formatStateSymbol)).toEqual(['r', 'v', 'r', 'a'])
   })
@@ -73,5 +74,23 @@ describe('solver core', () => {
       { position: 2, digit: '4' },
       { position: 3, digit: '3' },
     ])
+  })
+
+  it('usa una apertura fija en el primer intento', () => {
+    const candidates = generateCandidates(3)
+    const analysis = analyzeCandidates(candidates, [], 5)
+
+    expect(analysis.recommendedCandidate).toBe('123')
+  })
+
+  it('continua la apertura si el primer intento aporta poca señal', () => {
+    const candidates = generateCandidates(3)
+    const analysis = analyzeCandidates(
+      candidates,
+      [parseCompactAttempt('1r2r3r', 3)],
+      4,
+    )
+
+    expect(analysis.recommendedCandidate).toBe('456')
   })
 })

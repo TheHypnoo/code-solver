@@ -12,6 +12,7 @@ export type ParsedAttempt = {
   raw: string
   normalized: string
   code: string
+  feedbackKey: string
   states: DigitState[]
   entries: AttemptEntry[]
 }
@@ -32,10 +33,28 @@ export type SolverAnalysis = {
   summary: SolverSummary
 }
 
+type GuessScore = {
+  candidateBias: number
+  entropy: number
+  expectedBucket: number
+  guess: string
+  immediateSolveRate: number
+  worstBucket: number
+}
+
+type SolverPhase = 'opening' | 'midgame' | 'endgame'
+
 const DIGITS = '0123456789'
+const FEEDBACK_KEY_CACHE = new Map<string, string>()
 const MAX_SCORING_SOLUTIONS = 2500
 const MAX_REMAINING_GUESSES = 80
 const MAX_EXPLORATORY_GUESSES = 140
+const OPENING_GUESSES: Record<CodeLength, string[]> = {
+  3: ['123', '456'],
+  4: ['1234', '5678'],
+  5: ['12345', '67890'],
+  6: ['123456', '789012'],
+}
 
 const STATE_ALIASES: Record<string, DigitState> = {
   r: 'absent',
@@ -107,6 +126,7 @@ export function parseCompactAttempt(
     raw: rawValue,
     normalized,
     code,
+    feedbackKey: entries.map(({ state }) => formatStateSymbol(state)).join(''),
     states: entries.map(({ state }) => state),
     entries,
   }
@@ -158,9 +178,7 @@ export function filterCandidates(
 
   return candidates.filter((candidate) =>
     attempts.every((attempt) =>
-      evaluateGuess(candidate, attempt.code).every(
-        (state, index) => state === attempt.states[index],
-      ),
+      getFeedbackKey(candidate, attempt.code) === attempt.feedbackKey,
     ),
   )
 }
@@ -230,6 +248,7 @@ export function analyzeCandidates(
     recommendedCandidate: chooseRecommendedCandidate(
       baseCandidates,
       remainingCandidates,
+      attempts,
       attemptsLeft,
     ),
     summary: summarizeCandidates(remainingCandidates),
@@ -239,6 +258,7 @@ export function analyzeCandidates(
 function chooseRecommendedCandidate(
   baseCandidates: string[],
   remainingCandidates: string[],
+  attempts: ParsedAttempt[],
   attemptsLeft: number,
 ): string | null {
   if (remainingCandidates.length === 0) {
@@ -249,20 +269,28 @@ function chooseRecommendedCandidate(
     return remainingCandidates[0]
   }
 
+  const openingGuess = selectOpeningGuess(
+    baseCandidates[0].length as CodeLength,
+    attempts,
+    remainingCandidates.length,
+    attemptsLeft,
+  )
+
+  if (openingGuess) {
+    return openingGuess
+  }
+
+  const phase = getSolverPhase(remainingCandidates.length, attemptsLeft)
   const scoringSolutions = sampleScoringSolutions(remainingCandidates)
   const guessPool = buildGuessPool(
     baseCandidates,
     remainingCandidates,
+    phase,
     attemptsLeft,
   )
   const remainingSet = new Set(remainingCandidates)
   const solutionCount = scoringSolutions.length
-  let bestGuess = guessPool[0]
-  let bestWorstBucket = Number.POSITIVE_INFINITY
-  let bestExpectedBucket = Number.POSITIVE_INFINITY
-  let bestEntropy = Number.NEGATIVE_INFINITY
-  let bestImmediateSolveRate = Number.NEGATIVE_INFINITY
-  let bestCandidateBias = Number.NEGATIVE_INFINITY
+  let bestScore: GuessScore | null = null
 
   for (const guess of guessPool) {
     const partitions = new Map<string, number>()
@@ -285,46 +313,28 @@ function chooseRecommendedCandidate(
     const immediateSolveRate =
       (partitions.get(getSolvedKey(guess.length)) ?? 0) / solutionCount
     const candidateBias = remainingSet.has(guess)
-      ? attemptsLeft <= 2
+      ? phase === 'endgame'
         ? 2
         : 1
-      : attemptsLeft >= 3
+      : phase !== 'endgame'
         ? 1
         : 0
 
-    if (
-      worstBucket < bestWorstBucket ||
-      (worstBucket === bestWorstBucket &&
-        expectedBucket < bestExpectedBucket) ||
-      (worstBucket === bestWorstBucket &&
-        expectedBucket === bestExpectedBucket &&
-        entropy > bestEntropy) ||
-      (worstBucket === bestWorstBucket &&
-        expectedBucket === bestExpectedBucket &&
-        entropy === bestEntropy &&
-        immediateSolveRate > bestImmediateSolveRate) ||
-      (worstBucket === bestWorstBucket &&
-        expectedBucket === bestExpectedBucket &&
-        entropy === bestEntropy &&
-        immediateSolveRate === bestImmediateSolveRate &&
-        candidateBias > bestCandidateBias) ||
-      (worstBucket === bestWorstBucket &&
-        expectedBucket === bestExpectedBucket &&
-        entropy === bestEntropy &&
-        immediateSolveRate === bestImmediateSolveRate &&
-        candidateBias === bestCandidateBias &&
-        guess.localeCompare(bestGuess) < 0)
-    ) {
-      bestGuess = guess
-      bestWorstBucket = worstBucket
-      bestExpectedBucket = expectedBucket
-      bestEntropy = entropy
-      bestImmediateSolveRate = immediateSolveRate
-      bestCandidateBias = candidateBias
+    const currentScore: GuessScore = {
+      candidateBias,
+      entropy,
+      expectedBucket,
+      guess,
+      immediateSolveRate,
+      worstBucket,
+    }
+
+    if (isBetterGuessScore(currentScore, bestScore)) {
+      bestScore = currentScore
     }
   }
 
-  return bestGuess
+  return bestScore?.guess ?? guessPool[0]
 }
 
 function chooseByFrequency(candidates: string[], remainingSet: Set<string>, attemptsLeft: number): string[] {
@@ -373,6 +383,7 @@ function chooseByFrequency(candidates: string[], remainingSet: Set<string>, atte
 function buildGuessPool(
   baseCandidates: string[],
   remainingCandidates: string[],
+  phase: SolverPhase,
   attemptsLeft: number,
 ): string[] {
   const remainingSet = new Set(remainingCandidates)
@@ -386,7 +397,7 @@ function buildGuessPool(
       ? rankedRemaining
       : rankedRemaining.slice(0, MAX_REMAINING_GUESSES)
 
-  if (attemptsLeft <= 1 || remainingCandidates.length <= 2) {
+  if (phase === 'endgame' || attemptsLeft <= 1 || remainingCandidates.length <= 2) {
     return selectedRemaining
   }
 
@@ -424,7 +435,17 @@ function sampleScoringSolutions(candidates: string[]): string[] {
 }
 
 function getFeedbackKey(solution: string, guess: string): string {
-  return evaluateGuess(solution, guess).map(formatStateSymbol).join('')
+  const cacheKey = `${solution}|${guess}`
+  const cached = FEEDBACK_KEY_CACHE.get(cacheKey)
+
+  if (cached) {
+    return cached
+  }
+
+  const feedbackKey = evaluateGuess(solution, guess).map(formatStateSymbol).join('')
+  FEEDBACK_KEY_CACHE.set(cacheKey, feedbackKey)
+
+  return feedbackKey
 }
 
 function getSolvedKey(length: number): string {
@@ -443,4 +464,82 @@ function calculateEntropy(
   }
 
   return entropy
+}
+
+function isBetterGuessScore(
+  current: GuessScore,
+  best: GuessScore | null,
+): boolean {
+  if (!best) {
+    return true
+  }
+
+  return compareGuessScores(current, best) < 0
+}
+
+function compareGuessScores(left: GuessScore, right: GuessScore): number {
+  return (
+    compareAscending(left.worstBucket, right.worstBucket) ||
+    compareAscending(left.expectedBucket, right.expectedBucket) ||
+    compareDescending(left.entropy, right.entropy) ||
+    compareDescending(left.immediateSolveRate, right.immediateSolveRate) ||
+    compareDescending(left.candidateBias, right.candidateBias) ||
+    left.guess.localeCompare(right.guess)
+  )
+}
+
+function compareAscending(left: number, right: number): number {
+  return left === right ? 0 : left < right ? -1 : 1
+}
+
+function compareDescending(left: number, right: number): number {
+  return left === right ? 0 : left > right ? -1 : 1
+}
+
+function getSolverPhase(
+  remainingCandidatesCount: number,
+  attemptsLeft: number,
+): SolverPhase {
+  if (attemptsLeft <= 2 || remainingCandidatesCount <= 12) {
+    return 'endgame'
+  }
+
+  return 'midgame'
+}
+
+function selectOpeningGuess(
+  codeLength: CodeLength,
+  attempts: ParsedAttempt[],
+  remainingCandidatesCount: number,
+  attemptsLeft: number,
+): string | null {
+  if (attemptsLeft <= 2) {
+    return null
+  }
+
+  const openingPlan = OPENING_GUESSES[codeLength]
+  const usedGuesses = new Set(attempts.map(({ code }) => code))
+
+  if (attempts.length === 0) {
+    return openingPlan[0]
+  }
+
+  if (attempts.length > 1) {
+    return null
+  }
+
+  const firstAttemptHitCount = countHitDigits(attempts[0])
+  const openingShouldContinue =
+    firstAttemptHitCount <= Math.ceil(codeLength / 2) &&
+    remainingCandidatesCount > codeLength * 6
+
+  if (!openingShouldContinue) {
+    return null
+  }
+
+  return openingPlan.find((guess) => !usedGuesses.has(guess)) ?? null
+}
+
+function countHitDigits(attempt: ParsedAttempt): number {
+  return attempt.entries.filter(({ state }) => state !== 'absent').length
 }
