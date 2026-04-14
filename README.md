@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# Code Solver
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Herramienta web para ayudar a descifrar códigos numéricos de `3` a `6` dígitos usando pistas por color:
 
-Currently, two official plugins are available:
+- `rojo`: el dígito no pertenece al código
+- `azul`: el dígito pertenece, pero está en otra posición
+- `verde`: el dígito es correcto y está en la posición correcta
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+La aplicación está pensada para partidas con:
 
-## React Compiler
+- `5 jugadas` en total
+- `5 intentos máximos` por cada jugada
+- códigos sin dígitos repetidos
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Web pública: [https://thehypnoo.github.io/code-solver/](https://thehypnoo.github.io/code-solver/)
 
-## Expanding the ESLint configuration
+## Cómo funciona
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Elige la jugada activa.
+2. Fija la longitud del código para esa jugada (`3`, `4`, `5` o `6`).
+3. Introduce cada intento en formato compacto, por ejemplo `1r2v3r4a`.
+4. La app recalcula automáticamente:
+   - las combinaciones todavía posibles,
+   - una recomendación para el siguiente intento,
+   - los dígitos descartados, fijos o mal colocados.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+También acepta separadores, por ejemplo: `1r 2v 3r 4a`.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Desarrollo local
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
+npm run test
+npm run lint
+npm run build
 ```
+
+## Despliegue
+
+El proyecto está preparado para desplegarse automáticamente en GitHub Pages mediante GitHub Actions al hacer push a `main`.
