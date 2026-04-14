@@ -54,21 +54,22 @@ function App() {
     [currentRound.codeLength],
   )
   const deferredAttempts = useDeferredValue(currentRound.attempts)
+  const attemptsLeft = MAX_ATTEMPTS_PER_ROUND - currentRound.attempts.length
+  const canAddAttempt = attemptsLeft > 0
   const analysis = useMemo(
     () =>
       analyzeCandidates(
         baseCandidates,
         deferredAttempts.map(({ parsed }) => parsed),
+        attemptsLeft,
       ),
-    [baseCandidates, deferredAttempts],
+    [attemptsLeft, baseCandidates, deferredAttempts],
   )
   const isUpdating = deferredAttempts !== currentRound.attempts
   const visibleCandidates = analysis.remainingCandidates.slice(
     0,
     MAX_VISIBLE_CANDIDATES,
   )
-  const attemptsLeft = MAX_ATTEMPTS_PER_ROUND - currentRound.attempts.length
-  const canAddAttempt = attemptsLeft > 0
   const completedRounds = rounds.filter(
     (round) => round.attempts.length === MAX_ATTEMPTS_PER_ROUND,
   ).length
@@ -107,6 +108,7 @@ function App() {
       const nextAnalysis = analyzeCandidates(
         baseCandidates,
         nextAttempts.map(({ parsed: attempt }) => attempt),
+        attemptsLeft - 1,
       )
 
       if (nextAnalysis.remainingCandidates.length === 0) {
