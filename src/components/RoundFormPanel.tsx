@@ -11,6 +11,7 @@ type RoundFormPanelProps = {
   currentRoundIndex: number
   error: string | null
   exampleInput: string
+  isRoundSolved: boolean
   isUpdating: boolean
   maxAttemptsPerRound: number
   onCodeLengthChange: (length: CodeLength) => void
@@ -29,6 +30,7 @@ export function RoundFormPanel({
   currentRoundIndex,
   error,
   exampleInput,
+  isRoundSolved,
   isUpdating,
   maxAttemptsPerRound,
   onCodeLengthChange,
@@ -43,7 +45,9 @@ export function RoundFormPanel({
         <div>
           <h2>Jugada {currentRoundIndex + 1}</h2>
           <p className="support-copy">
-            Quedan {attemptsLeft} de {maxAttemptsPerRound} intentos.
+            {isRoundSolved
+              ? `Jugada resuelta en ${currentRound.attempts.length} de ${maxAttemptsPerRound} intentos.`
+              : `Quedan ${attemptsLeft} de ${maxAttemptsPerRound} intentos.`}
           </p>
         </div>
         <button className="ghost-button" type="button" onClick={onResetCurrentRound}>
@@ -98,7 +102,12 @@ export function RoundFormPanel({
 
       <div aria-live="polite" className="feedback-stack">
         {error ? <p className="message message--error">{error}</p> : null}
-        {!canAddAttempt ? (
+        {isRoundSolved ? (
+          <p className="message message--success">
+            Jugada resuelta. Ya no hace falta añadir más intentos.
+          </p>
+        ) : null}
+        {!canAddAttempt && !isRoundSolved ? (
           <p className="message message--info">
             Has agotado los 5 intentos de esta jugada.
           </p>

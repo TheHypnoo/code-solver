@@ -1,4 +1,11 @@
-import { startTransition, useDeferredValue, useMemo, useState } from 'react'
+import {
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import './App.css'
 import { AppHeader } from './components/AppHeader'
 import { CandidatesPanel } from './components/CandidatesPanel'
@@ -42,7 +49,6 @@ function App() {
   )
   const deferredAttempts = useDeferredValue(currentRound.attempts)
   const attemptsLeft = MAX_ATTEMPTS_PER_ROUND - currentRound.attempts.length
-  const canAddAttempt = attemptsLeft > 0
   const analysis = useMemo(
     () =>
       analyzeCandidates(
@@ -53,13 +59,18 @@ function App() {
     [attemptsLeft, baseCandidates, deferredAttempts],
   )
   const isUpdating = deferredAttempts !== currentRound.attempts
+  const isRoundSolved = analysis.remainingCandidates.length === 1
+  const canAddAttempt = attemptsLeft > 0 && !isRoundSolved
   const visibleCandidates = analysis.remainingCandidates.slice(
     0,
     MAX_VISIBLE_CANDIDATES,
   )
+  const solvedCode = isRoundSolved ? analysis.remainingCandidates[0] : null
   const completedRounds = rounds.filter(
     (round) => round.attempts.length === MAX_ATTEMPTS_PER_ROUND,
   ).length
+  const [confettiBurst, setConfettiBurst] = useState(0)
+  const lastSolvedSignatureRef = useRef<string | null>(null)
   const exampleInput = useMemo(
     () =>
       Array.from({ length: currentRound.codeLength }, (_, index) => {
@@ -69,6 +80,24 @@ function App() {
       }).join(''),
     [currentRound.codeLength],
   )
+
+  useEffect(() => {
+    const solvedSignature = solvedCode
+      ? `${currentRoundIndex}:${solvedCode}:${currentRound.attempts.length}`
+      : null
+
+    if (!solvedSignature) {
+      lastSolvedSignatureRef.current = null
+      return
+    }
+
+    if (lastSolvedSignatureRef.current === solvedSignature) {
+      return
+    }
+
+    lastSolvedSignatureRef.current = solvedSignature
+    setConfettiBurst((current) => current + 1)
+  }, [currentRound.attempts.length, currentRoundIndex, solvedCode])
 
   const updateCurrentRound = (updater: (round: RoundState) => RoundState) => {
     setRounds((current) =>
@@ -189,6 +218,7 @@ function App() {
           currentRoundIndex={currentRoundIndex}
           error={error}
           exampleInput={exampleInput}
+          isRoundSolved={isRoundSolved}
           isUpdating={isUpdating}
           maxAttemptsPerRound={MAX_ATTEMPTS_PER_ROUND}
           onCodeLengthChange={handleCodeLengthChange}
@@ -199,8 +229,10 @@ function App() {
         />
 
         <RecommendationPanel
+          confettiBurst={confettiBurst}
           recommendedCandidate={analysis.recommendedCandidate}
           remainingCandidatesCount={analysis.remainingCandidates.length}
+          solvedCode={solvedCode}
           summary={analysis.summary}
         />
 

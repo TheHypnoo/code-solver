@@ -1,28 +1,55 @@
+import type { CSSProperties } from 'react'
 import type { SolverSummary } from '../lib/solver'
 
 type RecommendationPanelProps = {
+  confettiBurst: number
   recommendedCandidate: string | null
   remainingCandidatesCount: number
+  solvedCode: string | null
   summary: SolverSummary
 }
 
 export function RecommendationPanel({
+  confettiBurst,
   recommendedCandidate,
   remainingCandidatesCount,
+  solvedCode,
   summary,
 }: RecommendationPanelProps) {
+  const isSolved = solvedCode !== null
+  const confettiPieces = Array.from({ length: 14 }, (_, index) => index)
+
   return (
     <article className="panel panel--recommendation">
       <h2>Recomendación</h2>
-      <div className="recommendation-card">
+      <div
+        key={confettiBurst}
+        className={
+          isSolved
+            ? 'recommendation-card recommendation-card--solved'
+            : 'recommendation-card'
+        }
+      >
+        {isSolved ? (
+          <div className="confetti-burst" aria-hidden="true">
+            {confettiPieces.map((piece) => (
+              <span
+                key={piece}
+                className="confetti-burst__piece"
+                style={{ '--piece-index': piece } as CSSProperties}
+              />
+            ))}
+          </div>
+        ) : null}
+        {isSolved ? <span className="recommendation-card__eyebrow">Solución cerrada</span> : null}
         <strong className="recommendation-card__code">
-          {recommendedCandidate ?? 'Sin opciones'}
+          {solvedCode ?? recommendedCandidate ?? 'Sin opciones'}
         </strong>
         <p>
           {remainingCandidatesCount === 0
             ? 'No queda ninguna combinación compatible con el historial.'
             : remainingCandidatesCount === 1
-              ? 'Solo queda una combinación posible.'
+              ? 'Solo queda una combinación posible. Puedes dar la jugada por resuelta.'
               : 'Se calcula a partir de las combinaciones válidas restantes.'}
         </p>
       </div>

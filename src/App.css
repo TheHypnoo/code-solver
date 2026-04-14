@@ -238,6 +238,10 @@
   color: var(--accent-ink);
 }
 
+.message--success {
+  color: #1d6f47;
+}
+
 .stat-grid,
 .summary-grid {
   display: grid;
@@ -283,6 +287,62 @@
   font-size: clamp(2rem, 4vw, 3rem);
   letter-spacing: 0.12em;
   color: var(--ink);
+}
+
+.recommendation-card--solved {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(39, 132, 86, 0.28);
+  background:
+    radial-gradient(circle at top, rgba(83, 190, 129, 0.18), transparent 55%),
+    #f5fbf7;
+}
+
+.recommendation-card__eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d6f47;
+}
+
+.confetti-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.confetti-burst__piece {
+  --left: calc(6% + (var(--piece-index) * 6.5%));
+  --delay: calc(var(--piece-index) * 45ms);
+  position: absolute;
+  top: -10%;
+  left: var(--left);
+  width: 10px;
+  height: 18px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  animation: confetti-fall 900ms ease-out forwards;
+  animation-delay: var(--delay);
+}
+
+.confetti-burst__piece:nth-child(4n + 1) {
+  background: #1d6f47;
+}
+
+.confetti-burst__piece:nth-child(4n + 2) {
+  background: #1f5a8f;
+}
+
+.confetti-burst__piece:nth-child(4n + 3) {
+  background: #c44f37;
+}
+
+.confetti-burst__piece:nth-child(4n) {
+  background: #d6a300;
 }
 
 .digit-list,
@@ -432,5 +492,21 @@
 
   .panel__header {
     flex-direction: column;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0) rotate(0deg);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-10px, 140px, 0) rotate(220deg);
   }
 }
