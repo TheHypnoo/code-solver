@@ -194,6 +194,18 @@ describe('solver core', () => {
     )
   })
 
+  it('no reutiliza digitos ya descartados en guesses exploratorios', () => {
+    const candidates = generateCandidates(3)
+    const attempts = [
+      parseCompactAttempt('1r2v3a', 3),
+      parseCompactAttempt('0r4r6r', 3),
+    ]
+    const analysis = analyzeCandidates(candidates, attempts, 3)
+
+    expect(analysis.remainingCandidates).toEqual(['325', '327', '328', '329'])
+    expect(analysis.recommendedCandidate).toBe('578')
+  })
+
   it('cierra sobre candidatas reales cuando ya esta en endgame', () => {
     const candidates = ['1234', '1243', '1324']
     const analysis = analyzeCandidates(candidates, [], 2)

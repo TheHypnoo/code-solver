@@ -387,6 +387,7 @@ function buildGuessPool(
   attemptsLeft: number,
 ): string[] {
   const remainingSet = new Set(remainingCandidates)
+  const usefulDigits = getUsefulDigits(remainingCandidates)
   const rankedRemaining = chooseByFrequency(
     remainingCandidates,
     remainingSet,
@@ -406,6 +407,10 @@ function buildGuessPool(
 
   for (const guess of rankedBase) {
     if (remainingSet.has(guess)) {
+      continue
+    }
+
+    if (!usesOnlyUsefulDigits(guess, usefulDigits)) {
       continue
     }
 
@@ -544,4 +549,20 @@ function selectOpeningGuess(
 
 function countHitDigits(attempt: ParsedAttempt): number {
   return attempt.entries.filter(({ state }) => state !== 'absent').length
+}
+
+function getUsefulDigits(candidates: string[]): Set<string> {
+  const usefulDigits = new Set<string>()
+
+  for (const candidate of candidates) {
+    for (const digit of candidate) {
+      usefulDigits.add(digit)
+    }
+  }
+
+  return usefulDigits
+}
+
+function usesOnlyUsefulDigits(guess: string, usefulDigits: Set<string>): boolean {
+  return guess.split('').every((digit) => usefulDigits.has(digit))
 }
