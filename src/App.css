@@ -268,19 +268,34 @@
   opacity: 0.45;
 }
 
-.attempt-slot__state--absent.is-selected {
-  background: rgba(196, 79, 55, 0.18);
+.attempt-slot__state--absent {
   color: #8f3624;
+  background: rgba(196, 79, 55, 0.1);
+}
+
+.attempt-slot__state--present {
+  color: #1f5a8f;
+  background: rgba(47, 112, 179, 0.1);
+}
+
+.attempt-slot__state--exact {
+  color: #1d6f47;
+  background: rgba(39, 132, 86, 0.1);
+}
+
+.attempt-slot__state--absent.is-selected {
+  background: rgba(196, 79, 55, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(143, 54, 36, 0.18);
 }
 
 .attempt-slot__state--present.is-selected {
-  background: rgba(47, 112, 179, 0.18);
-  color: #1f5a8f;
+  background: rgba(47, 112, 179, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(31, 90, 143, 0.18);
 }
 
 .attempt-slot__state--exact.is-selected {
-  background: rgba(39, 132, 86, 0.18);
-  color: #1d6f47;
+  background: rgba(39, 132, 86, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(29, 111, 71, 0.18);
 }
 
 .field {

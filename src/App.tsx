@@ -71,15 +71,6 @@ function App() {
   ).length
   const [confettiBurst, setConfettiBurst] = useState(0)
   const lastSolvedSignatureRef = useRef<string | null>(null)
-  const exampleInput = useMemo(
-    () =>
-      Array.from({ length: currentRound.codeLength }, (_, index) => {
-        const digit = ((index + 1) % 10).toString()
-        const symbols = ['r', 'a', 'v']
-        return `${digit}${symbols[index % symbols.length]}`
-      }).join(''),
-    [currentRound.codeLength],
-  )
 
   useEffect(() => {
     const solvedSignature = solvedCode
@@ -217,7 +208,6 @@ function App() {
           currentRound={currentRound}
           currentRoundIndex={currentRoundIndex}
           error={error}
-          exampleInput={exampleInput}
           isRoundSolved={isRoundSolved}
           isUpdating={isUpdating}
           maxAttemptsPerRound={MAX_ATTEMPTS_PER_ROUND}

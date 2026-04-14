@@ -11,7 +11,6 @@ type RoundFormPanelProps = {
   currentRound: RoundState
   currentRoundIndex: number
   error: string | null
-  exampleInput: string
   isRoundSolved: boolean
   isUpdating: boolean
   maxAttemptsPerRound: number
@@ -30,7 +29,6 @@ export function RoundFormPanel({
   currentRound,
   currentRoundIndex,
   error,
-  exampleInput,
   isRoundSolved,
   isUpdating,
   maxAttemptsPerRound,
@@ -84,24 +82,6 @@ export function RoundFormPanel({
           onChange={onCompactInputChange}
           value={compactInput}
         />
-
-        <label className="field">
-          <span className="field__label">Intento compacto opcional</span>
-          <input
-            autoComplete="off"
-            className="field__input"
-            disabled={!canAddAttempt}
-            inputMode="text"
-            maxLength={currentRound.codeLength * 3}
-            onChange={(event) => onCompactInputChange(event.target.value)}
-            placeholder={exampleInput}
-            value={compactInput}
-          />
-        </label>
-
-        <p className="field-help">
-          Puedes pegar o retocar aquí el formato <code>1r 2v 3r 4a</code>.
-        </p>
 
         <button className="primary-button" disabled={!canAddAttempt} type="submit">
           Añadir intento
