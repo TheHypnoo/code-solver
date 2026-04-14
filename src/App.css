@@ -168,6 +168,121 @@
   margin-top: 16px;
 }
 
+.attempt-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attempt-composer__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attempt-composer__hint {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.attempt-composer__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+}
+
+.attempt-slot {
+  padding: 12px;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.attempt-slot--absent {
+  border-color: rgba(196, 79, 55, 0.2);
+  background: rgba(196, 79, 55, 0.08);
+}
+
+.attempt-slot--present {
+  border-color: rgba(47, 112, 179, 0.24);
+  background: rgba(47, 112, 179, 0.08);
+}
+
+.attempt-slot--exact {
+  border-color: rgba(39, 132, 86, 0.24);
+  background: rgba(39, 132, 86, 0.08);
+}
+
+.attempt-slot__index {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.attempt-slot__digit {
+  width: 100%;
+  border: 1px solid #cfd6de;
+  border-radius: 10px;
+  padding: 12px 0;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.attempt-slot__digit:focus {
+  outline: 2px solid rgba(31, 90, 143, 0.12);
+  border-color: #8db0cf;
+}
+
+.attempt-slot__digit:disabled {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.attempt-slot__states {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.attempt-slot__state {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--ink);
+  background: #e8edf3;
+}
+
+.attempt-slot__state:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.attempt-slot__state--absent.is-selected {
+  background: rgba(196, 79, 55, 0.18);
+  color: #8f3624;
+}
+
+.attempt-slot__state--present.is-selected {
+  background: rgba(47, 112, 179, 0.18);
+  color: #1f5a8f;
+}
+
+.attempt-slot__state--exact.is-selected {
+  background: rgba(39, 132, 86, 0.18);
+  color: #1d6f47;
+}
+
 .field {
   display: flex;
   flex-direction: column;

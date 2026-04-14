@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { AttemptComposer } from './AttemptComposer'
 import { CODE_LENGTH_OPTIONS, type CodeLength } from '../lib/solver'
 import type { RoundState } from '../types/game'
 
@@ -77,8 +78,15 @@ export function RoundFormPanel({
       </p>
 
       <form className="attempt-form" onSubmit={onSubmit}>
+        <AttemptComposer
+          codeLength={currentRound.codeLength}
+          disabled={!canAddAttempt}
+          onChange={onCompactInputChange}
+          value={compactInput}
+        />
+
         <label className="field">
-          <span className="field__label">Intento compacto</span>
+          <span className="field__label">Intento compacto opcional</span>
           <input
             autoComplete="off"
             className="field__input"
@@ -92,7 +100,7 @@ export function RoundFormPanel({
         </label>
 
         <p className="field-help">
-          También puedes usar espacios: <code>1r 2v 3r 4a</code>.
+          Puedes pegar o retocar aquí el formato <code>1r 2v 3r 4a</code>.
         </p>
 
         <button className="primary-button" disabled={!canAddAttempt} type="submit">
