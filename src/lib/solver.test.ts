@@ -174,6 +174,26 @@ describe('solver core', () => {
     expect(analysis.recommendedCandidate).toBe('456')
   })
 
+  it('evita el brute force cuando aun quedan varios candidatos y varios intentos', () => {
+    const candidates = generateCandidates(3)
+    const attempts = [parseCompactAttempt('1r2v3a', 3)]
+    const analysis = analyzeCandidates(candidates, attempts, 4)
+
+    expect(analysis.remainingCandidates).toEqual([
+      '320',
+      '324',
+      '325',
+      '326',
+      '327',
+      '328',
+      '329',
+    ])
+    expect(analysis.recommendedCandidate).toBe('046')
+    expect(analysis.remainingCandidates).not.toContain(
+      analysis.recommendedCandidate as string,
+    )
+  })
+
   it('cierra sobre candidatas reales cuando ya esta en endgame', () => {
     const candidates = ['1234', '1243', '1324']
     const analysis = analyzeCandidates(candidates, [], 2)

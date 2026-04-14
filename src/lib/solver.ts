@@ -500,7 +500,9 @@ function getSolverPhase(
   remainingCandidatesCount: number,
   attemptsLeft: number,
 ): SolverPhase {
-  if (attemptsLeft <= 2 || remainingCandidatesCount <= 12) {
+  // Enter endgame only when the search space is already small enough to justify
+  // spending remaining attempts on direct candidate checks.
+  if (attemptsLeft <= 2 || remainingCandidatesCount <= attemptsLeft) {
     return 'endgame'
   }
 
