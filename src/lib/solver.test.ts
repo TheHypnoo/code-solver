@@ -163,6 +163,13 @@ describe('solver core', () => {
     expect(analysis.recommendedCandidate).toBe('1234')
   })
 
+  it('usa una apertura fija en el primer intento de 6 digitos', () => {
+    const candidates = generateCandidates(6)
+    const analysis = analyzeCandidates(candidates, [], 5)
+
+    expect(analysis.recommendedCandidate).toBe('123456')
+  })
+
   it('continua la apertura si el primer intento aporta poca señal', () => {
     const candidates = generateCandidates(3)
     const analysis = analyzeCandidates(
@@ -172,6 +179,17 @@ describe('solver core', () => {
     )
 
     expect(analysis.recommendedCandidate).toBe('456')
+  })
+
+  it('no fuerza la segunda apertura si el primer intento ya aporta suficiente señal', () => {
+    const candidates = generateCandidates(3)
+    const analysis = analyzeCandidates(
+      candidates,
+      [parseCompactAttempt('1r2v3v', 3)],
+      4,
+    )
+
+    expect(analysis.recommendedCandidate).not.toBe('456')
   })
 
   it('evita el brute force cuando aun quedan varios candidatos y varios intentos', () => {
@@ -206,6 +224,24 @@ describe('solver core', () => {
     expect(analysis.recommendedCandidate).toBe('578')
   })
 
+  it('no reutiliza ningun digito descartado tras varios intentos acumulados', () => {
+    const candidates = generateCandidates(4)
+    const attempts = [
+      parseCompactAttempt('1r2v3a4r', 4),
+      parseCompactAttempt('0r5r6r7r', 4),
+    ]
+    const analysis = analyzeCandidates(candidates, attempts, 3)
+
+    expect(analysis.recommendedCandidate).not.toMatch(/[014567]/)
+  })
+
+  it('cuando todos los digitos utiles ya son conocidos y ya no esta en apertura, recomienda dentro del conjunto restante', () => {
+    const candidates = ['324', '342']
+    const analysis = analyzeCandidates(candidates, [], 2)
+
+    expect(candidates).toContain(analysis.recommendedCandidate)
+  })
+
   it('cierra sobre candidatas reales cuando ya esta en endgame', () => {
     const candidates = ['1234', '1243', '1324']
     const analysis = analyzeCandidates(candidates, [], 2)
@@ -216,6 +252,13 @@ describe('solver core', () => {
   it('mantiene la recomendacion dentro del conjunto si solo quedan dos opciones', () => {
     const candidates = ['1234', '1243']
     const analysis = analyzeCandidates(candidates, [], 4)
+
+    expect(candidates).toContain(analysis.recommendedCandidate)
+  })
+
+  it('mantiene la recomendacion dentro del conjunto si solo queda una posicion por resolver y dos intentos', () => {
+    const candidates = ['327', '328', '329']
+    const analysis = analyzeCandidates(candidates, [], 2)
 
     expect(candidates).toContain(analysis.recommendedCandidate)
   })
@@ -235,5 +278,37 @@ describe('solver core', () => {
     )
 
     expect(filterCandidates(['1243', '1234', '3412'], [attempt])).toEqual(['1243'])
+  })
+
+  it('la recomendacion siempre sale del espacio base o es nula', () => {
+    const candidates = generateCandidates(3)
+    const attempts = [
+      parseCompactAttempt('1r2v3a', 3),
+      parseCompactAttempt('0r4r6r', 3),
+    ]
+    const analysis = analyzeCandidates(candidates, attempts, 3)
+
+    expect(
+      analysis.recommendedCandidate === null ||
+        candidates.includes(analysis.recommendedCandidate),
+    ).toBe(true)
+  })
+
+  it('nunca recomienda un digito descartado por un todo rojo inicial', () => {
+    const candidates = generateCandidates(3)
+    const analysis = analyzeCandidates(
+      candidates,
+      [parseCompactAttempt('1r2r3r', 3)],
+      4,
+    )
+
+    expect(analysis.recommendedCandidate).not.toMatch(/[123]/)
+  })
+
+  it('si todos los candidatos restantes comparten dos posiciones fijas, la recomendacion respeta el cierre en endgame', () => {
+    const candidates = ['325', '327', '329']
+    const analysis = analyzeCandidates(candidates, [], 1)
+
+    expect(candidates).toContain(analysis.recommendedCandidate)
   })
 })
