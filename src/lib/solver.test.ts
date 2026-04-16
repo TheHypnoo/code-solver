@@ -181,6 +181,18 @@ describe('solver core', () => {
     expect(analysis.recommendedCandidate).toBe('456')
   })
 
+  it('adapta la segunda apertura de 6 digitos para no reutilizar rojos del primer intento', () => {
+    const candidates = generateCandidates(6)
+    const analysis = analyzeCandidates(
+      candidates,
+      [parseCompactAttempt('1r2r3a4a5r6r', 6)],
+      4,
+    )
+
+    expect(analysis.recommendedCandidate).not.toBe('789012')
+    expect(analysis.recommendedCandidate).toMatch(/^[034789]{6}$/)
+  })
+
   it('no fuerza la segunda apertura si el primer intento ya aporta suficiente señal', () => {
     const candidates = generateCandidates(3)
     const analysis = analyzeCandidates(

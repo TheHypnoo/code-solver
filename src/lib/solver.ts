@@ -272,7 +272,7 @@ function chooseRecommendedCandidate(
   const openingGuess = selectOpeningGuess(
     baseCandidates[0].length as CodeLength,
     attempts,
-    remainingCandidates.length,
+    remainingCandidates,
     attemptsLeft,
   )
 
@@ -517,7 +517,7 @@ function getSolverPhase(
 function selectOpeningGuess(
   codeLength: CodeLength,
   attempts: ParsedAttempt[],
-  remainingCandidatesCount: number,
+  remainingCandidates: string[],
   attemptsLeft: number,
 ): string | null {
   if (attemptsLeft <= 2) {
@@ -526,6 +526,7 @@ function selectOpeningGuess(
 
   const openingPlan = OPENING_GUESSES[codeLength]
   const usedGuesses = new Set(attempts.map(({ code }) => code))
+  const remainingCandidatesCount = remainingCandidates.length
 
   if (attempts.length === 0) {
     return openingPlan[0]
@@ -544,11 +545,43 @@ function selectOpeningGuess(
     return null
   }
 
-  return openingPlan.find((guess) => !usedGuesses.has(guess)) ?? null
+  const usefulDigits = getUsefulDigits(remainingCandidates)
+  const staticFollowUp = openingPlan.find(
+    (guess) => !usedGuesses.has(guess) && usesOnlyUsefulDigits(guess, usefulDigits),
+  )
+
+  if (staticFollowUp) {
+    return staticFollowUp
+  }
+
+  return buildAdaptiveOpeningGuess(attempts[0], remainingCandidates)
 }
 
 function countHitDigits(attempt: ParsedAttempt): number {
   return attempt.entries.filter(({ state }) => state !== 'absent').length
+}
+
+function buildAdaptiveOpeningGuess(
+  firstAttempt: ParsedAttempt,
+  remainingCandidates: string[],
+): string | null {
+  const rankedDigits = rankDigitsByFrequency(remainingCandidates)
+  const attemptedDigits = new Set(firstAttempt.code.split(''))
+  const reusableDigits = new Set(
+    firstAttempt.entries
+      .filter(({ state }) => state !== 'absent')
+      .map(({ digit }) => digit),
+  )
+  const freshUsefulDigits = rankedDigits.filter((digit) => !attemptedDigits.has(digit))
+  const recycledUsefulDigits = rankedDigits.filter((digit) => reusableDigits.has(digit))
+  const guessDigits = [...freshUsefulDigits, ...recycledUsefulDigits].slice(
+    0,
+    firstAttempt.code.length,
+  )
+
+  return guessDigits.length === firstAttempt.code.length
+    ? guessDigits.join('')
+    : null
 }
 
 function getUsefulDigits(candidates: string[]): Set<string> {
@@ -561,6 +594,29 @@ function getUsefulDigits(candidates: string[]): Set<string> {
   }
 
   return usefulDigits
+}
+
+function rankDigitsByFrequency(candidates: string[]): string[] {
+  const digitCounts = new Map<string, number>()
+
+  for (const candidate of candidates) {
+    for (const digit of candidate) {
+      digitCounts.set(digit, (digitCounts.get(digit) ?? 0) + 1)
+    }
+  }
+
+  return DIGITS.split('')
+    .filter((digit) => (digitCounts.get(digit) ?? 0) > 0)
+    .sort((left, right) => {
+      const countDifference =
+        (digitCounts.get(right) ?? 0) - (digitCounts.get(left) ?? 0)
+
+      if (countDifference !== 0) {
+        return countDifference
+      }
+
+      return left.localeCompare(right)
+    })
 }
 
 function usesOnlyUsefulDigits(guess: string, usefulDigits: Set<string>): boolean {
